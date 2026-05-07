@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>CLRS Admin - Server Migration Guide</title>
+<style>
+  body { font-family: Calibri, Arial, sans-serif; margin: 40px; color: #333; line-height: 1.6; }
+  h1 { color: #003366; border-bottom: 2px solid #003366; padding-bottom: 8px; }
+  h2 { color: #003366; margin-top: 30px; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+  h3 { color: #336699; margin-top: 20px; }
+  table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; }
+  th { background-color: #003366; color: white; }
+  tr:nth-child(even) { background-color: #f2f6fa; }
+  .note { background: #fff8dc; border-left: 4px solid #daa520; padding: 10px 15px; margin: 15px 0; }
+  .important { background: #fde8e8; border-left: 4px solid #cc0000; padding: 10px 15px; margin: 15px 0; }
+  code { background: #eef; padding: 2px 6px; border-radius: 3px; font-family: Consolas, monospace; }
+  .footer { margin-top: 40px; border-top: 1px solid #ccc; padding-top: 10px; font-size: 0.9em; color: #666; }
+</style>
+</head>
+<body>
+
+<h1>CLRS Admin Application &ndash; Server Migration Guide</h1>
+
+<p><strong>Document Version:</strong> 1.0<br>
+<strong>Date:</strong> April 14, 2026<br>
+<strong>Application:</strong> Contingent Liabilities and Receivables System (CLRS) &ndash; Admin Module<br>
+<strong>Status:</strong> Migration Complete</p>
+
+<!-- ============================================================ -->
+<h2>1. Overview</h2>
+
+<p>This document provides administrative details regarding the recent migration of the CLRS Admin application and its associated shared folders from legacy servers to the new <code>lawdept1-dev.usps.gov</code> server. It outlines the new access paths, permission structures, and maintenance procedures to ensure a seamless transition for the team.</p>
+
+<!-- ============================================================ -->
+<h2>2. Server Migration Summary</h2>
+
+<h3>2.1 Old vs. New Server Mapping</h3>
+
+<table>
+<tr><th>Component</th><th>Old Server(s)</th><th>New Server</th></tr>
+<tr><td>CLRS Application (Dev)</td><td>eagnmnss58b, eagnmnss146, eagnmnbd240</td><td>lawdept1-dev.usps.gov</td></tr>
+<tr><td>CLRS Application (SIT)</td><td>&mdash;</td><td>lawdept1-sit.usps.gov</td></tr>
+<tr><td>File Upload Server</td><td>eagnmntwe1860:7443, eagnmntwe17d2</td><td>lawdept1-dev.usps.gov (dynamic)</td></tr>
+<tr><td>Admin Redirect</td><td>eagnmnsxba0.usps.gov</td><td>lawdept1-dev.usps.gov (relative path)</td></tr>
+<tr><td>Calendar Assets</td><td>lawdept1-dev.usps.gov/WebStaffDir/Admin/</td><td>Relative path (local)</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>3. New Access Paths</h2>
+
+<h3>3.1 Application URLs</h3>
+
+<table>
+<tr><th>Application</th><th>Environment</th><th>URL</th></tr>
+<tr><td>CLRS Report</td><td>Dev</td><td>https://lawdept1-dev.usps.gov/ClientService/ContingentLiabilities/V1.0/Report.full.cfm</td></tr>
+<tr><td>CLRS Report</td><td>SIT</td><td>https://lawdept1-sit.usps.gov/ClientService/ContingentLiabilities/V1.0/Report.full.cfm</td></tr>
+<tr><td>CLRS Admin</td><td>Dev</td><td>https://lawdept1-dev.usps.gov/InHouse/ContingLiabAdmin/Admin.full.cfm</td></tr>
+</table>
+
+<h3>3.2 Shared Folder / File Upload Paths</h3>
+
+<table>
+<tr><th>Purpose</th><th>Old Path</th><th>New Path</th></tr>
+<tr>
+  <td>Request for Submissions (Upload Destination)</td>
+  <td><code>\\eagnmntwe17d2\shr_LDIS_D\inetpub\wwwroot\InHouse\ContingentLiabilities\Request.for.Submissions</code></td>
+  <td><code>D:\web\inetpub\wwwroot2\ClientService\DocUploadsFromCF2018\Doc.ContingentLiabilities\RequestForSubmissions\</code></td>
+</tr>
+<tr>
+  <td>Upload Link (Web-Accessible)</td>
+  <td><code>https://eagnmntwe1860:7443/ClientService/DocUploadsFromCF2018/...</code></td>
+  <td>Dynamic: <code>https://#This_Server#/ClientService/DocUploadsFromCF2018/Doc.ContingentLiabilities/RequestForSubmissions/</code></td>
+</tr>
+<tr>
+  <td>Email Link for Uploads</td>
+  <td><code>https://lawdept1.usps.gov/ClientService/...</code> (hard-coded)</td>
+  <td>Dynamic: <code>https://#This_Server#/ClientService/DocUploadsFromCF2018/Doc.ContingentLiabilities/RequestForSubmissions/</code></td>
+</tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>4. Key Configuration Variables</h2>
+
+<p>The following variables are defined in <code>application.cfm</code> and control the server-dependent paths:</p>
+
+<table>
+<tr><th>Variable</th><th>Value</th><th>Purpose</th></tr>
+<tr><td><code>This_Server</code></td><td><code>CGI.SERVER_NAME</code> (dynamic)</td><td>Base server name used in all dynamic URLs</td></tr>
+<tr><td><code>CFFILE_RFS_Destination_Dir</code></td><td><code>D:\web\inetpub\wwwroot2\ClientService\DocUploadsFromCF2018\Doc.ContingentLiabilities\RequestForSubmissions\</code></td><td>Physical file upload directory on server</td></tr>
+<tr><td><code>CFFILE_RFS_Uploads_Dir_Link</code></td><td><code>https://#This_Server#/ClientService/DocUploadsFromCF2018/...</code></td><td>Web-accessible link to uploaded files</td></tr>
+<tr><td><code>CFMAIL_Dir_Link</code></td><td><code>https://#This_Server#/ClientService/DocUploadsFromCF2018/...</code></td><td>Link included in outbound emails</td></tr>
+</table>
+
+<div class="note">
+<strong>Note:</strong> The <code>This_Server</code> variable is set dynamically from <code>CGI.SERVER_NAME</code>, which means the application automatically adapts to whichever server it is deployed on without code changes.
+</div>
+
+<!-- ============================================================ -->
+<h2>5. Authentication &amp; Permission Structure</h2>
+
+<h3>5.1 MFA / SAML Authentication</h3>
+<p>Authentication is handled via the <code>MfaCookieCheck.cfm</code> include, which invokes SAML-based MFA for all servers except the local development environment:</p>
+
+<table>
+<tr><th>Server</th><th>MFA Bypassed?</th><th>Notes</th></tr>
+<tr><td><code>127.0.0.1</code></td><td>Yes</td><td>Local development only</td></tr>
+<tr><td><code>lawdept1-dev.usps.gov</code></td><td>Yes</td><td>Dev server &ndash; bypassed for testing</td></tr>
+<tr><td>All other servers</td><td>No</td><td>Full SAML/MFA authentication required</td></tr>
+</table>
+
+<h3>5.2 Application-Level Authorization</h3>
+<p>User access is controlled through the <code>BUSINESSSERVUSERS</code> table in the <code>ContLiab</code> datasource. Authorization levels:</p>
+
+<table>
+<tr><th>Auth Level</th><th>Access</th></tr>
+<tr><td><code>A</code> (Admin)</td><td>Full admin functions &ndash; send emails, load records, manage users</td></tr>
+<tr><td>Standard</td><td>View and update assigned case records</td></tr>
+</table>
+
+<p>User access can be managed via the <strong>Update User Access List</strong> function at: <code>Admin.UpdAuthUser.cfm</code></p>
+
+<h3>5.3 Dev Server Test Users</h3>
+
+<table>
+<tr><th>Server</th><th>Default User ID</th></tr>
+<tr><td><code>127.0.0.1</code></td><td>K6GVN0</td></tr>
+<tr><td><code>lawdept1-dev.usps.gov</code></td><td>YSRJ00</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>6. Files Modified During Migration</h2>
+
+<table>
+<tr><th>File</th><th>Change Description</th></tr>
+<tr><td><code>application.cfm</code></td><td>Updated <code>CFFILE_RFS_Uploads_Dir_Link</code> from hard-coded <code>lawdept1.usps.gov</code> to dynamic <code>#This_Server#</code></td></tr>
+<tr><td><code>application.1431.cfm</code></td><td>Updated <code>CFFILE_RFS_Uploads_Dir_Link</code> from <code>eagnmntwe1860:7443</code> to dynamic <code>#This_Server#</code></td></tr>
+<tr><td><code>application.20210128.cfm</code></td><td>Updated <code>CFFILE_RFS_Uploads_Dir_Link</code> from <code>lawdept1.usps.gov</code> to dynamic <code>#This_Server#</code></td></tr>
+<tr><td><code>Admin.full.cfm</code></td><td>Replaced <code>eagnmnss58b:8182</code> link with dynamic <code>#This_Server#</code>; updated all server name checks to <code>lawdept1-dev.usps.gov</code></td></tr>
+<tr><td><code>Admin.full.StLouis.Western.cfm</code></td><td>Replaced <code>lawdept.usps.gov</code> link with dynamic <code>#This_Server#</code></td></tr>
+<tr><td><code>MfaCookiecheck.cfm</code></td><td>Updated server name from <code>eagnmnss58b</code> to <code>lawdept1-dev.usps.gov</code></td></tr>
+<tr><td><code>setTestUser.cfm</code></td><td>Updated server name from <code>eagnmnss58b</code> to <code>lawdept1-dev.usps.gov</code></td></tr>
+<tr><td><code>UpdateTestUser.Action.cfm</code></td><td>Updated server name from <code>eagnmnss58b</code> to <code>lawdept1-dev.usps.gov</code></td></tr>
+<tr><td><code>LoadRecords.NextQuarter.cfm</code></td><td>Replaced <code>lawdept1.usps.gov</code> admin link with dynamic <code>#This_Server#</code></td></tr>
+<tr><td><code>email.cfmail_copy.cfm</code></td><td>Replaced <code>lawdept.usps.gov</code> memo links with dynamic <code>#This_Server#</code></td></tr>
+<tr><td><code>Upload_File.cfm</code></td><td>Replaced hard-coded <code>eagnmntwe17d2</code> destination with <code>#CFFILE_RFS_Destination_Dir#</code> variable</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>7. Maintenance Procedures</h2>
+
+<h3>7.1 Adding a New Environment</h3>
+<p>Because URLs now use the dynamic <code>#This_Server#</code> variable (populated from <code>CGI.SERVER_NAME</code>), deploying to a new server requires <strong>no URL changes</strong>. Simply:</p>
+<ol>
+  <li>Deploy the application files to the new server.</li>
+  <li>Ensure the <code>CFFILE_RFS_Destination_Dir</code> physical path exists and has appropriate write permissions.</li>
+  <li>If MFA should be bypassed on the new server, add the server name to the exclusion list in <code>MfaCookiecheck.cfm</code>.</li>
+  <li>If a default test user is needed, add a <code>cfelseif</code> block in <code>Admin.full.cfm</code>, <code>setTestUser.cfm</code>, and <code>UpdateTestUser.Action.cfm</code>.</li>
+</ol>
+
+<h3>7.2 File Upload Directory Permissions</h3>
+<p>The upload destination directory must have write permissions for the ColdFusion service account:</p>
+<ul>
+  <li><strong>Path:</strong> <code>D:\web\inetpub\wwwroot2\ClientService\DocUploadsFromCF2018\Doc.ContingentLiabilities\RequestForSubmissions\</code></li>
+  <li><strong>Required:</strong> Read/Write for the ColdFusion application pool identity</li>
+</ul>
+
+<h3>7.3 Source Control</h3>
+<p>All code changes are checked into the GitHub repository. Changes to server configuration or paths should be committed with descriptive messages referencing the migration.</p>
+
+<!-- ============================================================ -->
+<h2>8. Retired Server References</h2>
+
+<p>The following old server names are <strong>no longer in active code</strong> (they remain only within commented-out blocks for historical reference):</p>
+
+<table>
+<tr><th>Old Server</th><th>Role</th><th>Status</th></tr>
+<tr><td><code>eagnmnss58b</code></td><td>Dev application server</td><td>Replaced by <code>lawdept1-dev.usps.gov</code></td></tr>
+<tr><td><code>eagnmnss146</code></td><td>Dev application server</td><td>Replaced by <code>lawdept1-dev.usps.gov</code></td></tr>
+<tr><td><code>eagnmnbd240</code></td><td>Dev application server</td><td>Commented out (Jan 2026)</td></tr>
+<tr><td><code>eagnmnsxba0.usps.gov</code></td><td>Admin redirect</td><td>Commented out; relative path used</td></tr>
+<tr><td><code>eagnmntwe1860:7443</code></td><td>File upload / test server</td><td>Commented out; dynamic variable used</td></tr>
+<tr><td><code>eagnmntwe17d2</code></td><td>File upload UNC path</td><td>Commented out; dynamic variable used</td></tr>
+<tr><td><code>eagnmnss0b6</code></td><td>Application server</td><td>Commented out in <code>Admin.full_nxg.cfm</code></td></tr>
+<tr><td><code>lawdept.usps.gov</code></td><td>Old production domain</td><td>Commented out; dynamic variable used</td></tr>
+<tr><td><code>lawdept1.usps.gov</code></td><td>Old production domain</td><td>Commented out; dynamic variable used</td></tr>
+</table>
+
+<div class="important">
+<strong>Important:</strong> Do not remove commented-out legacy code blocks at this time. They serve as historical reference for rollback if needed.
+</div>
+
+<!-- ============================================================ -->
+
+<div class="footer">
+<p><strong>U.S. Postal Service Law Department</strong> &ndash; Contingent Liabilities &amp; Receivables System (CLRS)<br>
+Document prepared: April 14, 2026</p>
+</div>
+
+</body>
+</html>

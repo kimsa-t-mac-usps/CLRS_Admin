@@ -1,0 +1,11 @@
+.metadata/*
+RemoteSystemsTempFiles/*
+.metadata/.plugins/*
+
+.metadata/.lock
+.metada/version.ini
+.metadata\.*
+.metadata\.plugins\*
+.metadata\.lock
+.metadata\version.ini
+Thumbs.db
