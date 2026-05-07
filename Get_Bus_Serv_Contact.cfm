@@ -32,6 +32,11 @@ AND a.FIRSTNAME LIKE 'Maria%'
 
 
 <CFINCLUDE TEMPLATE="LDAPServerName.cfm">
+
+<!--- Skip LDAP on local/dev since the server is unreachable --->
+<CFIF IsLocalDev>
+    <CFSET This_EE_From_Line = '"' & Get_Bus_Serv_Contact.Trim_FIRSTNAME & ' ' & Get_Bus_Serv_Contact.Trim_LASTNAME & '"' & ' <' & LCase(Replace(Get_Bus_Serv_Contact.Trim_FIRSTNAME, " ", ".", "ALL")) & '.' & LCase(Get_Bus_Serv_Contact.Trim_LASTNAME) & '@usps.gov>'>
+<CFELSE>
 <cftry>
 <cfldap action="QUERY"
     name="QueryGetDisplayName"
@@ -62,8 +67,8 @@ AND a.FIRSTNAME LIKE 'Maria%'
 <CFIF IsDefined("QueryGetDisplayName.displayname") AND QueryGetDisplayName.RecordCount GT 0>
     <CFSET This_EE_From_Line = '"' & Trim(QueryGetDisplayName.displayName) & '"' & ' <' & Trim(QueryGetDisplayName.mail) & '>'>
 <CFELSE>
-    <!--- Fallback for local/dev when LDAP is unavailable --->
     <CFSET This_EE_From_Line = '"' & Get_Bus_Serv_Contact.Trim_FIRSTNAME & ' ' & Get_Bus_Serv_Contact.Trim_LASTNAME & '"' & ' <' & LCase(Replace(Get_Bus_Serv_Contact.Trim_FIRSTNAME, " ", ".", "ALL")) & '.' & LCase(Get_Bus_Serv_Contact.Trim_LASTNAME) & '@usps.gov>'>
+</CFIF>
 </CFIF>
 
 
